@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "..\\.."
+		},
+		{
+			"name": "Nuc_DC_DC_ConvDriver_Arduino",
+			"path": ".."
+		}
+	],
+	"settings": {}
+}

@@ -24,23 +24,27 @@ typedef struct {
   double VN_IN[8];
   bool CELLBALANCED;
   bool CB_ENABLE;
-  float VBOT[8];
-  float VTOP[8];
-  float DELTA[8];
+  double VBOT[8];
+  double VTOP[8];
+  double DELTA[8];
   int SIGNDELTA[8];
   int SIGNDELTA_PV[8];
-  float ABSDELTA[8];
-  float MAXDELTA;
+  double ABSDELTA[8];
+  double MAXDELTA;
   uint8_t DIR;
-  float ISETA;
+  double ISETA;
   uint8_t RESET;
-  float ISETA_INC_STEP;
-  float VTHL_CB;
+  double ISETA_INC_STEP;
+  double VTHL_CB;
+
+  bool   BUCK=0;
+  bool   BOOST=0;
+
+  uint8_t NODEARRAY[8];
 
 }CBalgo;
 
 
 void CBalgoFunc(CBalgo *hCBalgo);
-void VoltageInitialization(CBalgo *hCBalgo,uint8_t min,uint8_t max);
 void CBalgoTest(CBalgo *hCBalgo);
 #endif 

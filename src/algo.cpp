@@ -16,48 +16,38 @@
 #include "main.h"
 #include "algo.h"
 #include "voltage_loop.h"
+#include "matrix_DCDC_Driver.h"
+#include "BLE_Voltages.h"
 
 
 
 
-
-void VoltageInitialization(CBalgo *hCBalgo,uint8_t min,uint8_t max){
-  // uint8_t RAND_MAX=4;
-  //Debuggin g purpose 
-  Serial.println("Vtolgates Data:");
-  Serial.println("*****************************************************");
-  for(uint8_t i=1;i<hCBalgo->NCells+1;i++){
-    // hCBalgo->VN_IN[i]=((float)rand()/(float)(0.1)) * i;
-    hCBalgo->VN_IN[i]=((max - min) * ((float)rand() / RAND_MAX)) + min;
-
-    Serial.println(hCBalgo->VN_IN[i]);
-  }
-  Serial.println("*****************************************************");
-}
 
 
 
 void CBalgoFunc(CBalgo *hCBalgo){
     // check if the cellsare unblanced 
 
-    float MAXVCELL=hCBalgo->VN_IN[0];
+    double MAXVCELL=hCBalgo->VN_IN[0];
     for(uint8_t i=1;i<hCBalgo->NCells;i++){
-        if(hCBalgo->VN_IN[i]>MAXVCELL)
-        MAXVCELL=hCBalgo->VN_IN[i];
+        if(hCBalgo->VN_IN[i]>MAXVCELL){
+          MAXVCELL=hCBalgo->VN_IN[i];
+        }
     }
 
-    float MINVCELL=hCBalgo->VN_IN[0];
+    double MINVCELL=hCBalgo->VN_IN[0];
     for(uint8_t i=1;i<hCBalgo->NCells;i++){
-        if(hCBalgo->VN_IN[i]<MINVCELL)
-        MINVCELL=hCBalgo->VN_IN[i];
+        if(hCBalgo->VN_IN[i]<MINVCELL){
+            MINVCELL=hCBalgo->VN_IN[i];
+        }
     }
-
-    float   ERROR=MAXVCELL-MINVCELL; // Error 
-
+    double ERROR=MAXVCELL-MINVCELL;
     if(ERROR<0.002){
       hCBalgo->CELLBALANCED=1;
       hCBalgo->NODE=0;
       hCBalgo->CB_ENABLE=0;
+      hCBalgo->BUCK=0;
+      hCBalgo->BOOST=0;
       }
 
 
@@ -91,35 +81,45 @@ void CBalgoFunc(CBalgo *hCBalgo){
 
 
         // look for the unbalanced node  
-        hCBalgo->MAXDELTA=hCBalgo->ABSDELTA[0];
+      // Serial.println("*****************************************************");
+      hCBalgo->MAXDELTA=hCBalgo->ABSDELTA[0];
       for(uint8_t i=1;i<hCBalgo->NCells;i++){
           if( hCBalgo->ABSDELTA[i]>hCBalgo->MAXDELTA){
             hCBalgo->MAXDELTA=hCBalgo->ABSDELTA[i];
             hCBalgo->NODE=i+1;
+
           }
+            // Serial.println("absolute delta");
+            // Serial.println(hCBalgo->ABSDELTA[i]);
+            
 
       }
-
+      // Serial.println("*****************************************************");
       // set the pin DIR - buck or boost
       if( hCBalgo->SIGNDELTA[ hCBalgo->NODE-1]<0){
         hCBalgo->DIR=1; // TRUE - BUCK MODE --> GPIO pin set HIGH
+        hCBalgo->BUCK=1;
+        hCBalgo->BOOST=0;
       }
         
       else{
         hCBalgo->DIR=0; // FALSE - BOOST MODE --> GPIO pin set LOW
-        hCBalgo->CB_ENABLE=1;
-        hCBalgo->CELLBALANCED=0;
+        hCBalgo->BUCK=0;
+        hCBalgo->BOOST=1;
       }
+      hCBalgo->CB_ENABLE=1;
+      hCBalgo->CELLBALANCED=0;
+      hCBalgo->NODEARRAY[hCBalgo->NODE-1]=1;
 
   }
- 
+ DCDCConverter_MatrixDriver(hCBalgo->NODE,hCBalgo->NODEARRAY[hCBalgo->NODE-1], hCBalgo->DIR);
  ISETaFunc(hCBalgo);
 }
 
 
 void CBalgoTest(CBalgo *hCBalgo){
   
-
+  VoltageInitializationDumy(hCBalgo,3.8,4);
   CBalgoFunc(hCBalgo);
   Serial.println("*****************************************************");
   Serial.println("Algo Outputs");

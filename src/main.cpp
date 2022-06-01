@@ -216,12 +216,13 @@ static void MX_GPIO_Init(void)
 static I2C_HandleTypeDef i2cHandler;
 HAL_StatusTypeDef status;
 CBalgo hCBalgo;
+BLE hBLE;
 
 // User Function Definitions 
 
 // void CBalgoFunc(CBalgo *hCBalgo);
 // void VoltageInitialization(CBalgo *hCBalgo,uint8_t min,uint8_t max);
-
+void dataConvertBLEVoltages(BLE *hBLE);
 void setup(){
 
   SystemClock_Config(); // system clock configuration 
@@ -235,13 +236,14 @@ void setup(){
   uint8_t PreviousNode = 1;
   uint8_t DIR = 0;
   Serial.println("DC to Dc converter Driver");
-  DCDCConverter_MatrixDriver(CurrentNode,PreviousNode, DIR);
+  // DCDCConverter_MatrixDriver(CurrentNode,PreviousNode, DIR);
 
   hCBalgo.NCells=8;
   // hCBalgo.VN_IN[8]={3.2,3.33,3.4,3.25,3.6,3.7,3.56,3.62};
-  VoltageInitialization(&hCBalgo,3.2,4);
+  // VoltageInitialization(&hCBalgo,3.2,4);
 
-  CBalgoFunc(&hCBalgo);
+  // CBalgoFunc(&hCBalgo);
+  Serial.print(0xfd,HEX);
 
   
 }
@@ -283,7 +285,9 @@ void loop(){
   //     DCDCConverter_MatrixDriver(CurrentNode,PreviousNode, DIR);
   // }
   
-  //AlgoTesting 
+  // AlgoTesting 
+  CBalgoTest(&hCBalgo);
+  // VoltageInitialization(&hCBalgo,3.2,4);
   // CBalgoFunc(&hCBalgo);
   // Serial.println("*****************************************************");
   // Serial.println("Algo Outputs");
@@ -293,7 +297,72 @@ void loop(){
   // Serial.println(hCBalgo.DIR);
   // Serial.println("*****************************************************");
 
-  HAL_Delay(1000);
 
+  
+  //  // reply only when you receive data:
+  //     Serial.print(0xfd,HEX);
+  //     int incomingByte = 0; // for incoming serial data
+  //     if (Serial.available() > 0) {
+  //       Serial.readBytes(hBLE.BLE_buffer,hBLE.BLEbyteCount);
+  //       // Serial.println(sizeof(BLE_Data)/sizeof(BLE_Data[0]));
+
+  //       dataConvertBLEVoltages(&hBLE);
+  //       HAL_Delay(1000);
+  //     }
+
+  // getBLEdata(&hCBalgo,&hBLE);
 }
 
+
+
+
+void getBLEdata(CBalgo *hCBalgo,BLE *hBLE){
+    //1,f,1793,1559,152,2,f,1788,1548,151,3,f,1788,1447,139,4,f,1792,1545,151,5,f,1799,1476,142,6,f,1794,1548,152,7,f,1793,1486,145,@,
+    hBLE->BLE_buffer[0] = BMS_DATA_AVERAGE_REQ;
+    if(HAL_UART_Transmit(&huart3,hBLE->BLE_buffer,1,10) == HAL_OK){
+        if (HAL_UART_Receive (&huart3, hBLE->BLE_buffer,hBLE->BLEbyteCount, 10)==HAL_OK)
+        {
+            dataConvertBLE(hCBalgo,hBLE);
+        }
+        
+    }
+}
+
+
+
+void dataConvertBLE(CBalgo *hCBalgo,BLE *hBLE){
+        // Check the last terionation charecter to make sure all the data has recived 
+        if(hBLE->BLE_buffer[126]=='@'){
+                uint8_t count = 0;
+                for(uint8_t i=0;i< hBLE->BLEbyteCount;i++){
+                    
+                    if (hBLE->BLE_buffer[i]=='f')
+                    {
+                        hBLE->VBAT[count]=(int16_t)((hBLE->BLE_buffer[i+2]<<8) + hBLE->BLE_buffer[i+3]);
+                        count++;
+                    }
+                    
+                }
+        }
+}
+
+
+void dataConvertBLEVoltages(BLE *hBLE){
+  // Check the last terionation charecter to make sure all the data has recived 
+                uint8_t count = 0;
+                for(uint8_t i=0;i< hBLE->BLEbyteCount+1;i++){
+                    // 0x66 is the vale of the 'f'
+                    if (hBLE->BLE_buffer[i]==0x66)
+                    {
+                        hBLE->VBAT[count]=(int16_t)((hBLE->BLE_buffer[i+2]<<12) | (hBLE->BLE_buffer[i+3]<<8) | (hBLE->BLE_buffer[i+4]<<4) | (hBLE->BLE_buffer[i+5]));
+                        count++;
+                    }
+                    
+                }
+                if( hBLE->VBAT[0]==1795){
+                  Serial.print("data detected");
+                }
+                count=0;
+        if(hBLE->BLE_buffer[126]==0x64){
+        }
+}

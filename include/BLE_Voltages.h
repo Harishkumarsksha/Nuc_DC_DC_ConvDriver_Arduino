@@ -20,7 +20,8 @@
 #include "algo.h"
 
 typedef enum {
-    BMS_VERSION_REQ=0x0A,
+    BMS_DUY_REQ=0x7A,
+    BMS_VERSION_REQ,
     BMS_DATA_SINGLE_REQ,
     BMS_DATA_AVERAGE_REQ,
     BMS_ENABLE_BYPASS_REQ,
@@ -30,15 +31,17 @@ typedef enum {
 
 typedef struct 
 {   
-    uint16_t byteCount=1000;
-    uint8_t BLE_buffer[];
-    float VBAT[];
-    float RES_TERM[];
-    float TEMP[];
+    uint16_t BLEbyteCount=145;
+    uint8_t BLE_buffer[145]={0};
+    float VBAT[8]={0};
+    float RES_TERM[8]={0};
+    float TEMP[8]={0};
+    char BLE_Data[145] = {0};
     BLE_VOLTAGES_REQUESTS BLE_REQUEST;
 }BLE;
 
 void getBLEdata(CBalgo *hCBalgo,BLE *hBLE);
 void dataConvertBLE(CBalgo *hCBalgo,BLE *hBLE);
+void VoltageInitializationDumy(CBalgo *hCBalgo,uint8_t min,uint8_t max);
 
 #endif 

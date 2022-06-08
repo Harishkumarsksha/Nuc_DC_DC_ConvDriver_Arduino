@@ -83,6 +83,7 @@ void CBalgoFunc(CBalgo *hCBalgo){
         // look for the unbalanced node  
       // Serial.println("*****************************************************");
       hCBalgo->MAXDELTA=hCBalgo->ABSDELTA[0];
+       hCBalgo->NODE=1;
       for(uint8_t i=1;i<hCBalgo->NCells;i++){
           if( hCBalgo->ABSDELTA[i]>hCBalgo->MAXDELTA){
             hCBalgo->MAXDELTA=hCBalgo->ABSDELTA[i];
